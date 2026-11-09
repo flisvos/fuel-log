@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Fuel Log">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-512.png">
+<title>Fuel Log</title>
+<style>
+  :root{
+    --bg:#f2f2f7; --card:#fff; --ink:#111; --muted:#6b7280; --line:#e5e7eb;
+    --accent:#0a84ff; --danger:#ff3b30; --good:#1a7f37;
+    --diesel:#1f2937; --petrol:#15803d;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --bg:#000; --card:#1c1c1e; --ink:#f5f5f7; --muted:#9a9aa0; --line:#2c2c2e; --good:#30d158; --diesel:#4b5563; --petrol:#22a04b; }
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+    -webkit-text-size-adjust:100%}
+  .wrap{max-width:520px;margin:0 auto;
+    padding:calc(env(safe-area-inset-top) + 12px) calc(env(safe-area-inset-right) + 16px)
+            calc(env(safe-area-inset-bottom) + 28px) calc(env(safe-area-inset-left) + 16px)}
+  header{display:flex;align-items:center;justify-content:space-between;margin:6px 4px 14px}
+  h1{font-size:30px;font-weight:700;margin:0;letter-spacing:-.02em}
+  .link{background:none;border:0;color:var(--accent);font:inherit;font-size:16px;padding:6px 0;cursor:pointer}
+  .card{background:var(--card);border-radius:14px;padding:16px;margin-bottom:14px}
+
+  .vehicles{display:grid;gap:8px;margin-bottom:16px}
+  .veh{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:2px solid var(--line);
+    border-radius:12px;padding:10px 12px;background:var(--bg);color:var(--ink);font:inherit;cursor:pointer}
+  .veh[aria-pressed="true"]{border-color:var(--accent)}
+  .plate{font:700 15px/1 "Charles Wright","Arial Narrow",Arial,sans-serif;letter-spacing:.06em;
+    background:#f7d117;color:#111;border-radius:5px;padding:6px 8px;white-space:nowrap;border:1px solid rgba(0,0,0,.25)}
+  .veh .name{flex:1;font-weight:600;font-size:15px}
+  .fuel{font-size:11px;font-weight:700;color:#fff;border-radius:999px;padding:3px 8px;text-transform:uppercase;letter-spacing:.04em}
+  .fuel.diesel{background:var(--diesel)} .fuel.petrol{background:var(--petrol)}
+
+  label{display:block;font-size:12px;color:var(--muted);margin:0 2px 6px;text-transform:uppercase;letter-spacing:.04em}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  input{width:100%;font:inherit;font-size:22px;font-weight:600;padding:12px;
+    border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);outline:none;-webkit-appearance:none;appearance:none}
+  input[type=date]{font-size:17px;font-weight:500;min-height:48px}
+  input:focus{border-color:var(--accent)}
+  .date{margin-top:12px}
+  .results{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0}
+  .stat{background:var(--bg);border-radius:10px;padding:10px 6px;text-align:center}
+  .stat b{display:block;font-size:22px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .stat span{font-size:12px;color:var(--muted)}
+  .primary{width:100%;border:0;border-radius:12px;padding:15px;font:inherit;font-size:17px;font-weight:600;
+    background:var(--accent);color:#fff;cursor:pointer}
+  .primary:disabled{opacity:.4}
+  .secondary{width:100%;border:0;border-radius:12px;padding:13px;font:inherit;font-size:16px;font-weight:600;
+    background:var(--bg);color:var(--accent);cursor:pointer;margin-top:8px}
+  .msg{font-size:14px;color:var(--muted);text-align:center;margin:10px 0 0;min-height:1.4em}
+  .msg.ok{color:var(--good)} .msg.err{color:var(--danger)}
+  h2{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:22px 6px 8px;font-weight:600}
+  .avg{display:flex;justify-content:space-between;gap:6px;font-size:14px;color:var(--muted);margin:0 0 12px;flex-wrap:wrap}
+  .avg strong{color:var(--ink)}
+  ul{list-style:none;margin:0;padding:0}
+  li{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--line)}
+  li:first-child{border-top:0}
+  li .main{flex:1;min-width:0}
+  li .top{font-weight:600;font-variant-numeric:tabular-nums;font-size:15px}
+  li .sub{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .del{border:0;background:none;color:var(--muted);font:inherit;font-size:13px;padding:6px 8px;border-radius:8px;cursor:pointer}
+  .del.armed{background:var(--danger);color:#fff}
+  .empty{color:var(--muted);font-size:14px;text-align:center;padding:8px 0;display:block}
+  .note{font-size:12px;color:var(--muted);text-align:center;margin-top:14px}
+  .sheet{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:flex-end;justify-content:center;z-index:10}
+  .sheet .card{width:100%;max-width:520px;margin:0;border-radius:16px 16px 0 0;
+    padding-bottom:calc(env(safe-area-inset-bottom) + 16px)}
+  .sheet p{font-size:14px;color:var(--muted);margin:0 0 12px}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Fuel Log</h1>
+    <button class="link" id="menuBtn" type="button">Export</button>
+  </header>
+
+  <form class="card" id="form" autocomplete="off" novalidate>
+    <div class="vehicles" id="vehicles" role="group" aria-label="Vehicle"></div>
+    <div class="row">
+      <div>
+        <label for="miles">Miles since last fill</label>
+        <input id="miles" inputmode="decimal" placeholder="0" enterkeyhint="next">
+      </div>
+      <div>
+        <label for="litres">Litres</label>
+        <input id="litres" inputmode="decimal" placeholder="0.00" enterkeyhint="done">
+      </div>
+    </div>
+    <div class="date">
+      <label for="date">Date</label>
+      <input id="date" type="date">
+    </div>
+    <div class="results">
+      <div class="stat"><b id="rMpg">–</b><span>mpg (UK)</span></div>
+      <div class="stat"><b id="rL100">–</b><span>L/100 km</span></div>
+      <div class="stat"><b id="rKml">–</b><span>km/L</span></div>
+    </div>
+    <button class="primary" id="saveBtn" type="submit" disabled>Save fill-up</button>
+    <p class="msg" id="msg"></p>
+  </form>
+
+  <h2 id="histTitle">History</h2>
+  <section class="card">
+    <div class="avg" id="avg"></div>
+    <ul id="list"></ul>
+  </section>
+
+  <p class="note" id="note">Data is stored on this iPhone only. Export regularly as a backup.</p>
+</div>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="card">
+    <h2 style="margin-top:0">Export &amp; backup</h2>
+    <p>Exports every fill-up for all three vehicles as a CSV file that Numbers, Excel and Google Sheets can open. You can import the same file to restore your data on a new phone.</p>
+    <button class="primary" id="exportBtn" type="button">Export CSV</button>
+    <button class="secondary" id="importBtn" type="button">Import CSV (restore)</button>
+    <input type="file" id="importFile" accept=".csv,text/csv,text/plain" hidden>
+    <button class="secondary" id="closeSheet" type="button" style="color:var(--muted)">Close</button>
+    <p class="msg" id="sheetMsg"></p>
+  </div>
+</div>
+
+<script>
+(() => {
+  const VEHICLES = [
+    { id: 'LA69JVP', reg: 'LA69 JVP', name: 'Ford Transit Custom', fuel: 'Diesel' },
+    { id: 'WD25BWU', reg: 'WD25 BWU', name: 'Honda CRF300L',        fuel: 'Unleaded' },
+    { id: 'WA76LBL', reg: 'WA76 LBL', name: 'BMW F 450 GS',         fuel: 'Unleaded' }
+  ];
+  const L_PER_GAL = 4.54609, KM_PER_MI = 1.609344;
+  const KEY = 'fuellog.v1';
+
+  const calc = (mi, l) => ({ mpg: mi / (l / L_PER_GAL), l100: l / (mi * KM_PER_MI) * 100, kml: (mi * KM_PER_MI) / l });
+  const f1 = n => isFinite(n) ? n.toFixed(1) : '–';
+  const f2 = n => isFinite(n) ? n.toFixed(2) : '–';
+  const num = s => { const n = parseFloat(String(s).replace(',', '.').trim()); return n > 0 ? n : NaN; };
+  const $ = id => document.getElementById(id);
+  const todayISO = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
+
+  // ---------- storage (on-device) ----------
+  let state = { current: VEHICLES[0].id, fills: [] }; // fill: {id, v, date:'YYYY-MM-DD', miles, litres, ts}
+  function load() {
+    try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && Array.isArray(s.fills)) state = Object.assign(state, s); } catch (e) {}
+    if (!VEHICLES.some(v => v.id === state.current)) state.current = VEHICLES[0].id;
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); return true; }
+    catch (e) { flash('Couldn’t save to this device’s storage.', 'err'); return false; }
+  }
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+
+  const sorted = arr => arr.slice().sort((a, b) => (b.date.localeCompare(a.date)) || (b.ts - a.ts));
+
+  // ---------- render ----------
+  function render() {
+    const box = $('vehicles'); box.innerHTML = '';
+    VEHICLES.forEach(v => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'veh';
+      b.setAttribute('aria-pressed', v.id === state.current);
+      b.innerHTML = '<span class="plate"></span><span class="name"></span><span class="fuel"></span>';
+      b.querySelector('.plate').textContent = v.reg;
+      b.querySelector('.name').textContent = v.name;
+      const fu = b.querySelector('.fuel'); fu.textContent = v.fuel; fu.classList.add(v.fuel === 'Diesel' ? 'diesel' : 'petrol');
+      b.onclick = () => { state.current = v.id; save(); render(); };
+      box.appendChild(b);
+    });
+
+    const veh = VEHICLES.find(v => v.id === state.current);
+    $('histTitle').textContent = veh.reg + ' · ' + veh.name;
+    const mine = sorted(state.fills.filter(f => f.v === veh.id));
+    const list = $('list'); list.innerHTML = '';
+    if (!mine.length) {
+      list.innerHTML = '<li class="empty">No fill-ups yet.</li>'; $('avg').hidden = true;
+    } else {
+      const tm = mine.reduce((a, f) => a + f.miles, 0), tl = mine.reduce((a, f) => a + f.litres, 0), a = calc(tm, tl);
+      const avg = $('avg'); avg.hidden = false; avg.innerHTML = '';
+      [['Average ', f1(a.mpg) + ' mpg'], ['', f1(a.l100) + ' L/100km'], ['', f2(a.kml) + ' km/L']].forEach(([k, v]) => {
+        const s = document.createElement('span'); s.textContent = k; const st = document.createElement('strong'); st.textContent = v; s.appendChild(st); avg.appendChild(s);
+      });
+      mine.forEach(f => {
+        const r = calc(f.miles, f.litres);
+        const li = document.createElement('li');
+        li.innerHTML = '<div class="main"><div class="top"></div><div class="sub"></div></div><button class="del" type="button">Delete</button>';
+        li.querySelector('.top').textContent = f1(r.mpg) + ' mpg · ' + f1(r.l100) + ' L/100 · ' + f2(r.kml) + ' km/L';
+        const d = new Date(f.date + 'T12:00:00');
+        li.querySelector('.sub').textContent = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) + ' — ' + f.miles + ' mi, ' + f.litres + ' L';
+        const del = li.querySelector('.del');
+        del.onclick = () => {
+          if (!del.classList.contains('armed')) {
+            del.classList.add('armed'); del.textContent = 'Confirm';
+            setTimeout(() => { del.classList.remove('armed'); del.textContent = 'Delete'; }, 3000);
+            return;
+          }
+          state.fills = state.fills.filter(x => x.id !== f.id); save(); render();
+        };
+        list.appendChild(li);
+      });
+    }
+    preview();
+  }
+
+  function preview() {
+    const mi = num($('miles').value), l = num($('litres').value), ok = isFinite(mi) && isFinite(l);
+    const r = ok ? calc(mi, l) : {};
+    $('rMpg').textContent = ok ? f1(r.mpg) : '–';
+    $('rL100').textContent = ok ? f1(r.l100) : '–';
+    $('rKml').textContent = ok ? f2(r.kml) : '–';
+    $('saveBtn').disabled = !ok;
+  }
+  function flash(t, cls, el) { const m = $(el || 'msg'); m.textContent = t; m.className = 'msg ' + (cls || ''); }
+
+  $('miles').addEventListener('input', preview);
+  $('litres').addEventListener('input', preview);
+  $('miles').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('litres').focus(); } });
+
+  $('form').addEventListener('submit', e => {
+    e.preventDefault();
+    const mi = num($('miles').value), l = num($('litres').value);
+    if (!isFinite(mi) || !isFinite(l)) return;
+    const date = $('date').value || todayISO();
+    state.fills.push({ id: 'f' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), v: state.current, date, miles: mi, litres: l, ts: Date.now() });
+    if (!save()) { state.fills.pop(); return; }
+    const r = calc(mi, l), veh = VEHICLES.find(v => v.id === state.current);
+    flash('Saved — ' + f1(r.mpg) + ' mpg for ' + veh.reg + '.', 'ok');
+    $('miles').value = ''; $('litres').value = ''; $('date').value = todayISO();
+    if (document.activeElement) document.activeElement.blur();
+    render();
+  });
+
+  // ---------- CSV export / import ----------
+  const HEAD = ['Date', 'Registration', 'Vehicle', 'Fuel', 'Miles', 'Litres', 'MPG (UK)', 'L/100km', 'km/L'];
+  const q = s => /[",\n]/.test(s) ? '"' + String(s).replace(/"/g, '""') + '"' : String(s);
+  function toCSV() {
+    const rows = state.fills.slice().sort((a, b) => a.date.localeCompare(b.date) || a.ts - b.ts).map(f => {
+      const v = VEHICLES.find(x => x.id === f.v) || { reg: f.v, name: '', fuel: '' }, r = calc(f.miles, f.litres);
+      return [f.date, v.reg, v.name, v.fuel, f.miles, f.litres, r.mpg.toFixed(2), r.l100.toFixed(2), r.kml.toFixed(2)].map(q).join(',');
+    });
+    return '﻿' + [HEAD.join(','), ...rows].join('\r\n') + '\r\n';
+  }
+
+  $('exportBtn').onclick = async () => {
+    if (!state.fills.length) { flash('Nothing to export yet.', 'err', 'sheetMsg'); return; }
+    const name = 'fuel-log-' + todayISO() + '.csv';
+    const csv = toCSV();
+    const file = new File([csv], name, { type: 'text/csv' });
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'Fuel Log' });
+        flash('Exported.', 'ok', 'sheetMsg'); return;
+      }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    flash('CSV downloaded.', 'ok', 'sheetMsg');
+  };
+
+  function parseCSV(text) {
+    const rows = []; let row = [], cell = '', inQ = false;
+    text = text.replace(/^﻿/, '');
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (inQ) { if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else inQ = false; } else cell += c; }
+      else if (c === '"') inQ = true;
+      else if (c === ',') { row.push(cell); cell = ''; }
+      else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; }
+      else cell += c;
+    }
+    if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+    return rows.filter(r => r.some(x => x.trim() !== ''));
+  }
+
+  $('importBtn').onclick = () => $('importFile').click();
+  $('importFile').onchange = async e => {
+    const file = e.target.files[0]; e.target.value = '';
+    if (!file) return;
+    try {
+      const rows = parseCSV(await file.text());
+      const h = rows.shift().map(s => s.trim().toLowerCase());
+      const iD = h.indexOf('date'), iR = h.indexOf('registration'), iM = h.indexOf('miles'), iL = h.indexOf('litres');
+      if ([iD, iR, iM, iL].includes(-1)) throw new Error('format');
+      const seen = new Set(state.fills.map(f => [f.v, f.date, f.miles, f.litres].join('|')));
+      let added = 0, skipped = 0;
+      rows.forEach((r, n) => {
+        const reg = (r[iR] || '').replace(/\s+/g, '').toUpperCase();
+        const v = VEHICLES.find(x => x.id === reg), mi = num(r[iM]), l = num(r[iL]), date = (r[iD] || '').trim();
+        if (!v || !isFinite(mi) || !isFinite(l) || !/^\d{4}-\d{2}-\d{2}$/.test(date)) { skipped++; return; }
+        const k = [v.id, date, mi, l].join('|');
+        if (seen.has(k)) { skipped++; return; }
+        seen.add(k);
+        state.fills.push({ id: 'i' + Date.now().toString(36) + n, v: v.id, date, miles: mi, litres: l, ts: Date.now() + n });
+        added++;
+      });
+      save(); render();
+      flash('Imported ' + added + ' fill-up' + (added === 1 ? '' : 's') + (skipped ? ', skipped ' + skipped + ' (duplicates or unreadable)' : '') + '.', 'ok', 'sheetMsg');
+    } catch (err) {
+      flash('That file isn’t a Fuel Log CSV.', 'err', 'sheetMsg');
+    }
+  };
+
+  $('menuBtn').onclick = () => { flash('', '', 'sheetMsg'); $('sheet').hidden = false; };
+  $('closeSheet').onclick = () => { $('sheet').hidden = true; };
+  $('sheet').addEventListener('click', e => { if (e.target === $('sheet')) $('sheet').hidden = true; });
+
+  // ---------- start ----------
+  load();
+  $('date').value = todayISO();
+  render();
+  if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) {
+    $('note').textContent = 'Works offline. Data is stored on this iPhone only — export regularly as a backup.';
+  } else if (/iPhone|iPad/.test(navigator.userAgent)) {
+    $('note').textContent = 'Tip: tap Share → Add to Home Screen to install. Data is stored on this device only.';
+  }
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+})();
+</script>
+</body>
+</html>
