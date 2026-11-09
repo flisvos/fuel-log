@@ -1,6 +1,6 @@
 // Fuel Log service worker — caches the app so it runs with no connection.
 // Bump VERSION whenever you change any file, so phones pick up the update.
-const VERSION = 'fuellog-v1';
+const VERSION = 'fuellog-v2';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
